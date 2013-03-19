@@ -12,15 +12,24 @@ module Docsplit
         page_path = File.join(@output, "#{pdf_name}_%d.pdf")
         FileUtils.mkdir_p @output unless File.exists?(@output)
         
-        cmd = if DEPENDENCIES[:pdftailor] # prefer pdftailor, but keep pdftk for backwards compatability
-          "pdftailor unstitch --output #{ESCAPE[page_path]} #{ESCAPE[pdf]} 2>&1"
-        else
-          "pdftk #{ESCAPE[pdf]} burst output #{ESCAPE[page_path]} 2>&1"
-        end
-        result = `#{cmd}`.chomp
-        FileUtils.rm('doc_data.txt') if File.exists?('doc_data.txt')
-        raise ExtractionFailed, result if $? != 0
-        result
+        case @operation
+          when 'burst'
+            cmd = if DEPENDENCIES[:pdftailor] # prefer pdftailor, but keep pdftk for backwards compatability
+              "pdftailor unstitch --output #{ESCAPE[page_path]} #{ESCAPE[pdf]} 2>&1"
+            else
+              "pdftk #{ESCAPE[pdf]} burst output #{ESCAPE[page_path]} 2>&1"
+            end
+            result = `#{cmd}`.chomp
+            FileUtils.rm('doc_data.txt') if File.exists?('doc_data.txt')
+            raise ExtractionFailed, result if $? != 0
+            result
+          when 'cat'
+            cmd = "pdftk #{ESCAPE[pdf]} cat #{ESCAPE[@pages]} output #{ESCAPE[page_path]} 2>&1"
+            result = `#{cmd}`.chomp
+            FileUtils.rm('doc_data.txt') if File.exists?('doc_data.txt')
+            raise ExtractionFailed, result if $? != 0
+            result
+          end
       end
     end
 
@@ -29,6 +38,9 @@ module Docsplit
 
     def extract_options(options)
       @output = options[:output] || '.'
+      @operation = options[:operation] || 'burst'
+      @pages = options[:pages] || '1-end'
+      #@dump = options[:dump] 
     end
 
   end
