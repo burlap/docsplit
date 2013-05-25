@@ -36,6 +36,7 @@ module Docsplit
   # Use the ExtractPages Java class to burst a PDF into single pages.
   def self.extract_pages(pdfs, opts={})
     pdfs = ensure_pdfs(pdfs)
+    opts[:pages] = normalize_value(opts[:pages]) if opts[:pages]
     PageExtractor.new.extract(pdfs, opts)
   end
 
